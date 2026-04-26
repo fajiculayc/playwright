@@ -13,7 +13,6 @@ Automated end-to-end test suite for [Spree Commerce Demo Store](https://demo.spr
 | OpenCSV | 5.9 |
 
 ## Project Structure
-## Project Structure
 
 ```
 src/
