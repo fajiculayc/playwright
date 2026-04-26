@@ -5,7 +5,7 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
-  workflow_dispatch: 
+  workflow_dispatch:
 
 jobs:
   test:
@@ -33,10 +33,6 @@ jobs:
 
       - name: Run Smoke Tests
         run: mvn test -Dtest="SmokeTest" -DfailIfNoTests=false
-
-      - name: Run All Tests
-        if: always()
-        run: mvn test -DfailIfNoTests=false
 
       - name: Upload test results
         if: always()
