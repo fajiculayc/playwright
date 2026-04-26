@@ -1,0 +1,6 @@
+email,password,scenario
+,,Empty fields
+,Password123!,Empty email
+superman,,Missing @
+superman@,,Incomplete email
+superman@email.com,,Empty password

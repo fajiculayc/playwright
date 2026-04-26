@@ -1,0 +1,10 @@
+firstName,lastName,email,password,confirmPassword,acceptTerms,scenario
+,J'onzz,martian_manhunter@email.com,Password123!,Password123!,true,Empty first name
+Oliver,,green_arrow@email.com,Password123!,Password123!,true,Empty last name
+Arthur,Curry,,Password123!,Password123!,true,Empty email
+Ray,Palmer,atom,Password123!,Password123!,true,Invalid email no @
+Barry,Allen,the_flash@,Password123!,Password123!,true,Invalid email incomplete
+Victor,Stone,cyborg@email.com,,Password123!,true,Empty password
+Hal,Jordan,green_lantern@email.com,Pw1!,Pw1!,true,Password too short
+Carter,Hall,hawkman@email.com,Password123!,,true,Empty confirm password
+,,,,,true,Empty fields

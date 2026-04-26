@@ -1,0 +1,4 @@
+firstName,lastName,email,password,confirmPassword,acceptTerms,expectedErro,scenario
+Jonathan,Kent,superman@email.com,Password123!,Password123!,true,Email has already been taken,Duplicate email
+Bruce,Wayne,batman@email.com,Password123!,ImBatman123!,true,Passwords do not match,Mismatched passwords
+Diana,Prince,wonderwoman@email.com,Password123!,Password123!,false,You must agree to the store policies to create an account,Terms not accepted

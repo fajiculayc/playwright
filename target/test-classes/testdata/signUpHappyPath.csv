@@ -1,0 +1,2 @@
+firstName,lastName,email,password,confirmPassword,acceptTerms,scenario
+Clark,Kent,superman@email.com,Password123!,Password123!,true,Happy path

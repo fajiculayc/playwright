@@ -1,0 +1,3 @@
+email,password,scenario
+superman@email.co,Password123!,Invalid email
+superman@email.com,P,Invalid password
