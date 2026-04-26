@@ -10,14 +10,12 @@ public class ProductsPage extends BasePage {
 
     private static final String URL = "https://demo.spreecommerce.org/us/en/products";
 
-    // Fields
     private final Locator allProductsHeader;
     private final Locator products;
     private final Locator productCountLabel;
     private final Locator loadingIndicator;
     private final Locator sortButton;
 
-    // Constructor
     public ProductsPage(Page page) {
         super(page);
         this.allProductsHeader = page.getByRole(AriaRole.HEADING,
@@ -29,12 +27,10 @@ public class ProductsPage extends BasePage {
                 new Page.GetByRoleOptions().setName("Sort"));
     }
 
-    // Navigate
     public void navigate() {
         super.navigate(URL);
     }
 
-    // Getters
     public Locator getAllProductsHeader() {
         return allProductsHeader;
     }
@@ -74,24 +70,33 @@ public class ProductsPage extends BasePage {
     }
 
     public int getExpectedProductCount() {
-        String text = productCountLabel.innerText();
-        return Integer.parseInt(text.split(" ")[0]);
+        return Integer.parseInt(productCountLabel.innerText().split(" ")[0]);
     }
 
     public Locator getSortButton() {
         return sortButton;
     }
 
-    // Actions
     public void scrollUntilAllProductsLoaded() {
         int expectedCount = getExpectedProductCount();
-        while (getCurrentProductsCount() < expectedCount) {
+        int maxAttempts = 20;
+        int attempts = 0;
+
+        while (getCurrentProductsCount() < expectedCount && attempts < maxAttempts) {
             page.evaluate("window.scrollTo(0, document.body.scrollHeight)");
-            if (loadingIndicator.isVisible()) {
-                loadingIndicator.waitFor(new Locator.WaitForOptions()
-                        .setState(WaitForSelectorState.HIDDEN));
+
+            try {
+                if (loadingIndicator.isVisible()) {
+                    loadingIndicator.waitFor(new Locator.WaitForOptions()
+                            .setState(WaitForSelectorState.HIDDEN)
+                            .setTimeout(30000));
+                }
+            } catch (Exception e) {
+                // Loading indicator timed out - continue scrolling
             }
-            page.waitForTimeout(1000);
+
+            page.waitForTimeout(2000);
+            attempts++;
         }
     }
 
@@ -103,7 +108,7 @@ public class ProductsPage extends BasePage {
         Locator product = products.nth(index);
         product.scrollIntoViewIfNeeded();
         product.waitFor(new Locator.WaitForOptions()
-            .setState(WaitForSelectorState.VISIBLE));
+                .setState(WaitForSelectorState.VISIBLE));
         product.click();
         page.waitForURL("**/products/**");
         return new ProductDetailsPage(page);

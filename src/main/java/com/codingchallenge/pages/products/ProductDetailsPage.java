@@ -9,7 +9,6 @@ import com.microsoft.playwright.options.WaitForSelectorState;
 
 public class ProductDetailsPage extends BasePage {
 
-    // Fields
     private final Locator productPrice;
     private final Locator productInStock;
     private final Locator addToCartButton;
@@ -20,20 +19,21 @@ public class ProductDetailsPage extends BasePage {
     private final Locator selectedColorLabel;
     private int addToCartClickCount = 0;
 
-    // Constructor
     public ProductDetailsPage(Page page) {
         super(page);
         this.productPrice = page.locator("div.mt-4 span.text-3xl.font-bold.text-gray-900").first();
         this.productInStock = page.locator("span.text-green-600");
-        this.addToCartButton = page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Add to Cart"));
-        this.addingToCartButton = page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Adding..."));
+        this.addToCartButton = page.getByRole(AriaRole.BUTTON,
+                new Page.GetByRoleOptions().setName("Add to Cart"));
+        this.addingToCartButton = page.getByRole(AriaRole.BUTTON,
+                new Page.GetByRoleOptions().setName("Adding..."));
         this.increaseQuantityButton = page.getByLabel("Increase quantity");
         this.decreaseQuantityButton = page.getByLabel("Decrease quantity");
-        this.quantityDisplay = page.locator("span.tabular-nums");
-        this.selectedColorLabel = page.locator("div.flex.items-center.justify-between.mb-3 span.text-sm.text-gray-500");
+        this.quantityDisplay = page.getByRole(AriaRole.MAIN).locator("span.tabular-nums");
+        this.selectedColorLabel = page.locator(
+                "div.flex.items-center.justify-between.mb-3 span.text-sm.text-gray-500");
     }
 
-    // Getters
     public Locator getProductName() {
         return page.locator("h1.text-3xl.font-bold.text-gray-900").first();
     }
@@ -94,7 +94,6 @@ public class ProductDetailsPage extends BasePage {
         return Integer.parseInt(quantityDisplay.innerText().trim());
     }
 
-    // Actions
     public boolean isProductInStock() {
         return productInStock.isVisible();
     }

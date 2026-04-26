@@ -5,86 +5,66 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.codingchallenge.base.BaseTest;
 import com.codingchallenge.components.CartComponent;
 import com.codingchallenge.pages.products.ProductDetailsPage;
 import com.codingchallenge.pages.products.ProductsPage;
-import com.microsoft.playwright.Locator;
-import com.microsoft.playwright.options.WaitForSelectorState;
 
 public class ProductDetailsPageTest extends BaseTest {
 
-     // Fields
     ProductsPage productsPage;
     ProductDetailsPage productDetailsPage;
 
-    // BeforeEach
     @BeforeEach
     void setUpPage() {
         signInAs("superman@email.com", "Password123!");
         productsPage = new ProductsPage(page);
         productsPage.navigate();
-        productsPage.getProduct(0).waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.VISIBLE));
-        int totalProducts = productsPage.getCurrentProductsCount();
-        int randomIndex = (int) (Math.random() * totalProducts);
-        productsPage.getProduct(randomIndex).scrollIntoViewIfNeeded();
-        for (int i = 0; i < totalProducts; i++) {
-            try{
-                productDetailsPage = productsPage.clickProduct(randomIndex);
-                if (productDetailsPage.isProductInStock()) {                        
-                    break;
-                }
-                page.goBack();
-                page.waitForLoadState();
-                productsPage = new ProductsPage(page);
-                randomIndex = (int) (Math.random() * totalProducts);
-            } catch (Exception e) {
-                page.goBack();
-                page.waitForLoadState();
-                productsPage = new ProductsPage(page);
-                randomIndex = (int) (Math.random() * totalProducts);
-            }
-        }
+        productDetailsPage = findInStockProduct(productsPage);
     }
 
     @Test
+    @DisplayName("Add to Cart button should successfully add an in-stock product to cart")
     void shouldAddProductToCart() {
         assertTrue(productDetailsPage.isProductInStock());
         productDetailsPage.clickAddToCartButton();
-        //assertTrue(productDetailsPage.isAddToCartReady());
     }
 
     @Test
+    @DisplayName("Default color label should be visible on product details page")
     void shouldDisplayDefaultColor() {
         assertThat(productDetailsPage.getSelectedColorLabel()).isVisible();
     }
 
     @Test
+    @DisplayName("Quantity should increase by 1 when plus button is clicked")
     void shouldIncreaseQuantityWhenClickingPlus() {
-        int currentQuantityBeforeIncrease = productDetailsPage.getQuantity();
+        int quantityBefore = productDetailsPage.getQuantity();
         productDetailsPage.increaseQuantity();
-        assertEquals(currentQuantityBeforeIncrease + 1, productDetailsPage.getQuantity());
+        assertEquals(quantityBefore + 1, productDetailsPage.getQuantity());
     }
 
     @Test
+    @DisplayName("Quantity should decrease by 1 when minus button is clicked")
     void shouldDecreaseQuantityWhenClickingMinus() {
-        if(productDetailsPage.getDecreaseQuantityButton().isDisabled()){
-            productDetailsPage.increaseQuantity();
-            int currentQuantityBeforeDecrease = productDetailsPage.getQuantity();
-            productDetailsPage.decreaseQuantity();
-            assertEquals(currentQuantityBeforeDecrease - 1, productDetailsPage.getQuantity());
-        }
+        productDetailsPage.increaseQuantity();
+        int quantityBefore = productDetailsPage.getQuantity();
+        productDetailsPage.decreaseQuantity();
+        assertEquals(quantityBefore - 1, productDetailsPage.getQuantity());
     }
 
     @Test
+    @DisplayName("Selected color label should update when a color button is clicked")
     void shouldChangeColorWhenClickingColorButton() {
         String selectedColor = productDetailsPage.selectRandomColor();
         assertThat(productDetailsPage.getSelectedColorLabel()).hasText(selectedColor);
     }
 
     @Test
+    @DisplayName("Cart quantity should reflect the quantity set on the product details page")
     void shouldReflectQuantityInCartWhenAddedWithIncreasedQuantity() {
         productDetailsPage.increaseQuantity();
         int quantityBeforeAddingToCart = productDetailsPage.getQuantity();

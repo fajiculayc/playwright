@@ -9,7 +9,6 @@ import com.microsoft.playwright.options.WaitForSelectorState;
 
 public class CheckoutPage extends BasePage {
 
-    // Fields
     private final Locator checkoutAddressSection;
     private final Locator savedAddressName;
     private final Locator savedAddressDetails;
@@ -34,7 +33,6 @@ public class CheckoutPage extends BasePage {
     private final Locator productTaxValueText;
     private final Locator productTotalValueText;
 
-    // Constructor
     public CheckoutPage(Page page) {
         super(page);
         this.checkoutAddressSection = page.locator("#checkout-section-address");
@@ -80,7 +78,6 @@ public class CheckoutPage extends BasePage {
         this.productTotalValueText = page.locator("span.text-xl.font-bold.text-gray-900");
     }
 
-    // Getters
     public Locator getCheckoutAddressSection() {
         return checkoutAddressSection;
     }
@@ -177,7 +174,6 @@ public class CheckoutPage extends BasePage {
         return page.locator("[data-slot='alert-description']");
     }
 
-
     public Locator getCardNumberField() {
         return stripeFrame().getByPlaceholder("1234 1234 1234");
     }
@@ -190,19 +186,20 @@ public class CheckoutPage extends BasePage {
         return stripeFrame().getByPlaceholder("CVC");
     }
 
+    public Locator getCardCountryDropdown() {
+        return stripeFrame().locator("#payment-countryInput");
+    }
+
     public String getContactEmailValue() {
-        return (String) page.evaluate(
-                "document.querySelector('input#email').value");
+        return (String) page.evaluate("document.querySelector('input#email').value");
     }
 
     public String getFirstNameValue() {
-        return (String) page.evaluate(
-                "document.querySelector('#ship-first_name').value");
+        return (String) page.evaluate("document.querySelector('#ship-first_name').value");
     }
 
     public String getLastNameValue() {
-        return (String) page.evaluate(
-                "document.querySelector('#ship-last_name').value");
+        return (String) page.evaluate("document.querySelector('#ship-last_name').value");
     }
 
     public String getSavedAddressNameText() {
@@ -218,39 +215,25 @@ public class CheckoutPage extends BasePage {
     }
 
     public double getProductCostWithTaxValue() {
-        return Double.parseDouble(productCostWithTaxValueText.innerText()
-                .replace("$", "").replace(",", "").trim());
+        return parsePrice(productCostWithTaxValueText.innerText());
     }
 
     public double getProductSubtotalValue() {
-        return Double.parseDouble(productSubtotalValueText.innerText()
-                .replace("$", "").replace(",", "").trim());
+        return parsePrice(productSubtotalValueText.innerText());
     }
 
     public double getProductShippingCostValue() {
-        return Double.parseDouble(productShippingCostValueText.innerText()
-                .replace("$", "").replace(",", "").trim());
+        return parsePrice(productShippingCostValueText.innerText());
     }
 
     public double getProductTaxValue() {
-        return Double.parseDouble(productTaxValueText.innerText()
-                .replace("$", "").replace(",", "").trim());
+        return parsePrice(productTaxValueText.innerText());
     }
 
     public double getProductTotalValue() {
-        return Double.parseDouble(productTotalValueText.innerText()
-                .replace("$", "").replace(",", "").trim());
+        return parsePrice(productTotalValueText.innerText());
     }
 
-    private FrameLocator stripeFrame() {
-        return page.frameLocator("iframe[title='Secure payment input frame']").first();
-    }
-
-    public Locator getCardCountryDropdown() {
-        return stripeFrame().locator("#payment-countryInput");
-    }
-
-    // Actions
     public void clickUseDifferentAddress() {
         useDifferentAddressRadioButton.click();
     }
@@ -273,7 +256,7 @@ public class CheckoutPage extends BasePage {
 
     public void fillZipCode(String zipCode) {
         zipPostalCodeTextField.pressSequentially(zipCode,
-            new Locator.PressSequentiallyOptions().setDelay(100));
+                new Locator.PressSequentiallyOptions().setDelay(100));
         zipPostalCodeTextField.press("Tab");
     }
 
@@ -317,8 +300,8 @@ public class CheckoutPage extends BasePage {
 
     public void fillCardZipCode(String zipCode) {
         stripeFrame().locator("#payment-postalCodeInput")
-            .pressSequentially(zipCode, 
-                new Locator.PressSequentiallyOptions().setDelay(100));
+                .pressSequentially(zipCode,
+                        new Locator.PressSequentiallyOptions().setDelay(100));
     }
 
     public void checkSameAsShippingAddress() {
@@ -329,39 +312,38 @@ public class CheckoutPage extends BasePage {
 
     public OrderConfirmationPage clickPayNow() {
         payNowButton.click();
-        page.waitForURL("**/order-placed/**", 
-            new Page.WaitForURLOptions().setTimeout(30000));
+        page.waitForURL("**/order-placed/**",
+                new Page.WaitForURLOptions().setTimeout(30000));
         return new OrderConfirmationPage(page);
     }
 
     public void waitForShippingSection() {
         try {
             page.locator("#checkout-section-shipping").waitFor(
-                new Locator.WaitForOptions()
-                    .setState(WaitForSelectorState.VISIBLE)
-                    .setTimeout(60000));
+                    new Locator.WaitForOptions()
+                            .setState(WaitForSelectorState.VISIBLE)
+                            .setTimeout(60000));
             page.locator("#checkout-section-shipping")
-                .locator("label").first()
-                .waitFor(new Locator.WaitForOptions()
-                    .setState(WaitForSelectorState.VISIBLE)
-                    .setTimeout(60000));
+                    .locator("label").first()
+                    .waitFor(new Locator.WaitForOptions()
+                            .setState(WaitForSelectorState.VISIBLE)
+                            .setTimeout(60000));
         } catch (Exception e) {
-            page.frameLocator("iframe[title='Secure payment input frame']").first()
-                .getByTestId("afterpay_clearpay").click();
+            // Fallback: switching payment method triggers shipping section to appear
+            stripeFrame().getByTestId("afterpay_clearpay").click();
             page.waitForTimeout(1000);
-            page.frameLocator("iframe[title='Secure payment input frame']").first()
-                .getByTestId("card").click();
+            stripeFrame().getByTestId("card").click();
             page.waitForTimeout(1000);
 
             page.locator("#checkout-section-shipping").waitFor(
-                new Locator.WaitForOptions()
-                    .setState(WaitForSelectorState.VISIBLE)
-                    .setTimeout(60000));
+                    new Locator.WaitForOptions()
+                            .setState(WaitForSelectorState.VISIBLE)
+                            .setTimeout(60000));
             page.locator("#checkout-section-shipping")
-                .locator("label").first()
-                .waitFor(new Locator.WaitForOptions()
-                    .setState(WaitForSelectorState.VISIBLE)
-                    .setTimeout(60000));
+                    .locator("label").first()
+                    .waitFor(new Locator.WaitForOptions()
+                            .setState(WaitForSelectorState.VISIBLE)
+                            .setTimeout(60000));
         }
     }
 
@@ -378,7 +360,7 @@ public class CheckoutPage extends BasePage {
         waitForShippingSection();
         selectShippingMethod(shippingMethod);
         fillCardDetails(cardNumber, expiration, securityCode);
-        fillCardCountry(cardCountry);         
+        fillCardCountry(cardCountry);
         fillCardZipCode(zipCode);
         checkSameAsShippingAddress();
         return clickPayNow();
@@ -387,7 +369,8 @@ public class CheckoutPage extends BasePage {
     public void waitForLoad() {
         page.waitForURL("**/checkout/cart_**");
         page.waitForLoadState();
-        page.waitForFunction("() => document.querySelector('#checkout-section-address') !== null");
+        page.waitForFunction(
+                "() => document.querySelector('#checkout-section-address') !== null");
     }
 
     public boolean isOnCheckoutPage() {
@@ -396,6 +379,14 @@ public class CheckoutPage extends BasePage {
 
     public void waitForPaymentForm() {
         page.getByText("Loading payment form...").waitFor(
-            new Locator.WaitForOptions().setState(WaitForSelectorState.HIDDEN));
+                new Locator.WaitForOptions().setState(WaitForSelectorState.HIDDEN));
+    }
+
+    private FrameLocator stripeFrame() {
+        return page.frameLocator("iframe[title='Secure payment input frame']").first();
+    }
+
+    private double parsePrice(String text) {
+        return Double.parseDouble(text.replace("$", "").replace(",", "").trim());
     }
 }

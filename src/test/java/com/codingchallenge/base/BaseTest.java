@@ -11,6 +11,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 
 import com.codingchallenge.pages.auth.SignInPage;
+import com.codingchallenge.pages.products.ProductDetailsPage;
+import com.codingchallenge.pages.products.ProductsPage;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.BrowserType;
@@ -30,10 +32,9 @@ public class BaseTest {
     static void launchBrowser() {
         playwright = Playwright.create();
         browser = playwright.chromium().launch(
-            new BrowserType.LaunchOptions()
-                .setHeadless(System.getenv("CI") != null)
-                .setSlowMo(System.getenv("CI") != null ? 0 : 500)
-        );
+                new BrowserType.LaunchOptions()
+                        .setHeadless(System.getenv("CI") != null)
+                        .setSlowMo(System.getenv("CI") != null ? 0 : 500));
     }
 
     @AfterAll
@@ -57,16 +58,32 @@ public class BaseTest {
         signInPage.navigate();
         signInPage.signIn(email, password);
         page.waitForURL("**/account");
-        page.waitForLoadState();   
+        page.waitForLoadState();
         assertThat(page).hasURL(Pattern.compile(".*/account$"));
-        assertThat(page.getByRole(AriaRole.HEADING, 
-        new Page.GetByRoleOptions().setName("Account Overview"))).isVisible();
+        assertThat(page.getByRole(AriaRole.HEADING,
+                new Page.GetByRoleOptions().setName("Account Overview"))).isVisible();
+    }
+
+    protected ProductDetailsPage findInStockProduct(ProductsPage productsPage) {
+        int totalProducts = productsPage.getCurrentProductsCount();
+        for (int i = 0; i < totalProducts; i++) {
+            int randomIndex = (int) (Math.random() * totalProducts);
+            productsPage.getProduct(randomIndex).scrollIntoViewIfNeeded();
+            ProductDetailsPage productDetailsPage = productsPage.clickProduct(randomIndex);
+            if (productDetailsPage.isProductInStock()) {
+                return productDetailsPage;
+            }
+            page.goBack();
+            page.waitForLoadState();
+            productsPage = new ProductsPage(page);
+        }
+        throw new RuntimeException("No in-stock product found after searching all products");
     }
 
     protected String[] getFirstRowFromCsv(String csvPath) {
         try (CSVReader reader = new CSVReader(new InputStreamReader(
                 getClass().getResourceAsStream(csvPath)))) {
-            reader.skip(1); // skip header
+            reader.skip(1);
             return reader.readNext();
         } catch (Exception e) {
             throw new RuntimeException("Failed to read CSV: " + csvPath, e);

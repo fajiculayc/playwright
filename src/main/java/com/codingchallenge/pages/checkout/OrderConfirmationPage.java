@@ -7,7 +7,6 @@ import com.microsoft.playwright.options.AriaRole;
 
 public class OrderConfirmationPage extends BasePage {
 
-    // Fields
     private final Locator orderNumber;
     private final Locator orderItemsHeader;
     private final Locator subtotalValue;
@@ -20,7 +19,6 @@ public class OrderConfirmationPage extends BasePage {
     private final Locator billingAddressSection;
     private final Locator continueShoppingButton;
 
-    // Constructor
     public OrderConfirmationPage(Page page) {
         super(page);
         this.orderNumber = page.locator("p.text-gray-500").filter(
@@ -50,7 +48,6 @@ public class OrderConfirmationPage extends BasePage {
                 new Page.GetByRoleOptions().setName("Continue Shopping"));
     }
 
-    // Getters
     public Locator getOrderNumber() {
         return orderNumber;
     }
@@ -108,28 +105,22 @@ public class OrderConfirmationPage extends BasePage {
         return page.getByText("Visa ending in " + lastFourDigits);
     }
 
-    // String value getters
-    public double getSubtotalValue_() {
-        return Double.parseDouble(subtotalValue.innerText()
-                .replace("$", "").replace(",", "").trim());
+    public double getSubtotalAmount() {
+        return parsePrice(subtotalValue.innerText());
     }
 
-    public double getShippingValue_() {
-        return Double.parseDouble(shippingValue.innerText()
-                .replace("$", "").replace(",", "").trim());
+    public double getShippingAmount() {
+        return parsePrice(shippingValue.innerText());
     }
 
-    public double getTaxValue_() {
-        return Double.parseDouble(taxValue.innerText()
-                .replace("$", "").replace(",", "").trim());
+    public double getTaxAmount() {
+        return parsePrice(taxValue.innerText());
     }
 
-    public double getTotalValue_() {
-        return Double.parseDouble(totalValue.innerText()
-                .replace("$", "").replace(",", "").trim());
+    public double getTotalAmount() {
+        return parsePrice(totalValue.innerText());
     }
 
-    // Actions
     public void waitForLoad() {
         page.waitForURL("**/order-placed/**");
         page.waitForFunction(
@@ -144,5 +135,9 @@ public class OrderConfirmationPage extends BasePage {
     public void clickContinueShopping() {
         continueShoppingButton.click();
         page.waitForLoadState();
+    }
+
+    private double parsePrice(String text) {
+        return Double.parseDouble(text.replace("$", "").replace(",", "").trim());
     }
 }

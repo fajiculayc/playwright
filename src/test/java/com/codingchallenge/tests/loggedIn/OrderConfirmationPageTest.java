@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.codingchallenge.base.BaseTest;
@@ -15,12 +16,9 @@ import com.codingchallenge.pages.checkout.CheckoutPage;
 import com.codingchallenge.pages.checkout.OrderConfirmationPage;
 import com.codingchallenge.pages.products.ProductDetailsPage;
 import com.codingchallenge.pages.products.ProductsPage;
-import com.microsoft.playwright.Locator;
-import com.microsoft.playwright.options.WaitForSelectorState;
 
 public class OrderConfirmationPageTest extends BaseTest {
 
-    // Fields
     ProductsPage productsPage;
     ProductDetailsPage productDetailsPage;
     CartComponent cart;
@@ -41,54 +39,30 @@ public class OrderConfirmationPageTest extends BaseTest {
     String cardCountry;
     String checkoutUrl;
 
-    // BeforeEach
     @BeforeEach
     void setUpPage() {
-        String[] credentials = getFirstRowFromCsv("/testdata/accountData.csv");
-        testEmail = credentials[0];
-        password = credentials[1];
-        firstName = credentials[2];
-        lastName = credentials[3];
-        address = credentials[4];
-        city = credentials[5];
-        state = credentials[6];
-        zipCode = credentials[7];
-        shippingMethod = credentials[8];
-        cardNumber = credentials[9];
-        expirationDate = credentials[10];
-        securityCode = credentials[11];
-        cardCountry = credentials[12];
+        String[] data = getFirstRowFromCsv("/testdata/accountData.csv");
+        testEmail = data[0];
+        password = data[1];
+        firstName = data[2];
+        lastName = data[3];
+        address = data[4];
+        city = data[5];
+        state = data[6];
+        zipCode = data[7];
+        shippingMethod = data[8];
+        cardNumber = data[9];
+        expirationDate = data[10];
+        securityCode = data[11];
+        cardCountry = data[12];
 
-        // Sign in
         signInAs(testEmail, password);
 
-        // Navigate to products
         productsPage = new ProductsPage(page);
         productsPage.navigate();
-        page.waitForLoadState();
-
-        // Wait for first product to load
-        productsPage.getProduct(0).waitFor(new Locator.WaitForOptions()
-                .setState(WaitForSelectorState.VISIBLE));
-
-        // Scroll until all products loaded
         productsPage.scrollUntilAllProductsLoaded();
 
-        // Find in-stock product
-        int totalProducts = productsPage.getCurrentProductsCount();
-        for (int i = 0; i < totalProducts; i++) {
-            int randomIndex = (int) (Math.random() * totalProducts);
-            productsPage.getProduct(randomIndex).scrollIntoViewIfNeeded();
-            productDetailsPage = productsPage.clickProduct(randomIndex);
-
-            if (productDetailsPage.isProductInStock()) {
-                break;
-            }
-
-            page.goBack();
-            page.waitForLoadState();
-            productsPage = new ProductsPage(page);
-        }
+        productDetailsPage = findInStockProduct(productsPage);
 
         cart = productDetailsPage.clickAddToCartButton();
         checkoutPage = cart.clickCheckout();
@@ -98,84 +72,93 @@ public class OrderConfirmationPageTest extends BaseTest {
         orderConfirmationPage = checkoutPage.completeCheckout(
                 "US", address, city, state, zipCode,
                 shippingMethod, cardNumber, expirationDate,
-                securityCode, cardCountry
-        );
+                securityCode, cardCountry);
         orderConfirmationPage.waitForLoad();
     }
 
-    // Page load tests
     @Test
+    @DisplayName("Should be on order confirmation page after completing checkout")
     void shouldBeOnOrderConfirmationPage() {
         assertTrue(orderConfirmationPage.isOnOrderConfirmationPage());
     }
 
     @Test
+    @DisplayName("Order confirmation URL should contain same cart ID as checkout URL")
     void shouldHaveSameCartIdInUrl() {
         String cartId = checkoutUrl.substring(checkoutUrl.lastIndexOf("/") + 1);
-        
-        assertTrue(page.url().contains(cartId));
-        
-        // Verify URL changed from /checkout to /order-placed
-        assertTrue(checkoutUrl.contains("/checkout/"));
-        assertTrue(page.url().contains("/order-placed/"));
+        assertTrue(
+                page.url().contains(cartId) &&
+                page.url().contains("/order-placed/") &&
+                checkoutUrl.contains("/checkout/"),
+                "Expected URL to contain cart ID '" + cartId + "' and '/order-placed/' " +
+                "but was: " + page.url());
     }
 
     @Test
+    @DisplayName("Thank you message should display with logged in user's first name")
     void shouldDisplayThankYouMessageWithFirstName() {
         assertThat(orderConfirmationPage.getThankYouMessage(firstName)).isVisible();
     }
 
     @Test
+    @DisplayName("Order number should be visible")
     void shouldDisplayOrderNumber() {
         assertThat(orderConfirmationPage.getOrderNumber()).isVisible();
     }
 
     @Test
+    @DisplayName("Order number should contain Order # prefix")
     void shouldDisplayOrderNumberWithHash() {
         assertThat(orderConfirmationPage.getOrderNumber()).containsText("Order #");
     }
 
     @Test
+    @DisplayName("Order items header should be visible")
     void shouldDisplayOrderItemsHeader() {
         assertThat(orderConfirmationPage.getOrderItemsHeader()).isVisible();
     }
 
     @Test
+    @DisplayName("Subtotal should be visible in order summary")
     void shouldDisplaySubtotal() {
         assertThat(orderConfirmationPage.getSubtotalValue()).isVisible();
     }
 
     @Test
+    @DisplayName("Shipping cost should be visible in order summary")
     void shouldDisplayShipping() {
         assertThat(orderConfirmationPage.getShippingValue()).isVisible();
     }
 
     @Test
+    @DisplayName("Tax should be visible in order summary")
     void shouldDisplayTax() {
         assertThat(orderConfirmationPage.getTaxValue()).isVisible();
     }
 
     @Test
+    @DisplayName("Total should be visible in order summary")
     void shouldDisplayTotal() {
         assertThat(orderConfirmationPage.getTotalValue()).isVisible();
     }
 
     @Test
+    @DisplayName("Total should equal subtotal + shipping + tax")
     void shouldDisplayCorrectTotal() {
-        double subtotal = orderConfirmationPage.getSubtotalValue_();
-        double shipping = orderConfirmationPage.getShippingValue_();
-        double tax = orderConfirmationPage.getTaxValue_();
-        double expectedTotal = subtotal + shipping + tax;
-        double actualTotal = orderConfirmationPage.getTotalValue_();
-        assertEquals(expectedTotal, actualTotal, 0.01);
+        double subtotal = orderConfirmationPage.getSubtotalAmount();
+        double shipping = orderConfirmationPage.getShippingAmount();
+        double tax = orderConfirmationPage.getTaxAmount();
+        assertEquals(subtotal + shipping + tax, orderConfirmationPage.getTotalAmount(), 0.01);
     }
 
     @Test
+    @DisplayName("Shipping method section should be visible")
     void shouldDisplayShippingMethodSection() {
         assertThat(orderConfirmationPage.getShippingMethodSection()).isVisible();
     }
 
     @Test
+    @DisplayName("Correct shipping method should be displayed")
     void shouldDisplayCorrectShippingMethod() {
         assertThat(orderConfirmationPage.getShippingMethodSection()
                 .locator(".."))
@@ -183,21 +166,25 @@ public class OrderConfirmationPageTest extends BaseTest {
     }
 
     @Test
+    @DisplayName("Payment section should be visible")
     void shouldDisplayPaymentSection() {
         assertThat(orderConfirmationPage.getPaymentSection()).isVisible();
     }
 
     @Test
+    @DisplayName("Payment info should show last 4 digits of card")
     void shouldDisplayCorrectPaymentInfo() {
         assertThat(orderConfirmationPage.getPaymentInfo("4242")).isVisible();
     }
 
     @Test
+    @DisplayName("Shipping address section should be visible")
     void shouldDisplayShippingAddressSection() {
         assertThat(orderConfirmationPage.getShippingAddressSection()).isVisible();
     }
 
     @Test
+    @DisplayName("Shipping address should contain user's full name")
     void shouldDisplayCorrectShippingAddress() {
         assertThat(orderConfirmationPage.getShippingAddressSection()
                 .locator(".."))
@@ -205,21 +192,25 @@ public class OrderConfirmationPageTest extends BaseTest {
     }
 
     @Test
+    @DisplayName("Billing address section should be visible")
     void shouldDisplayBillingAddressSection() {
         assertThat(orderConfirmationPage.getBillingAddressSection()).isVisible();
     }
 
     @Test
+    @DisplayName("Email confirmation should show logged in user's email")
     void shouldDisplayEmailConfirmation() {
         assertThat(orderConfirmationPage.getEmailConfirmation(testEmail)).isVisible();
     }
 
     @Test
+    @DisplayName("Continue Shopping button should be visible")
     void shouldDisplayContinueShoppingButton() {
         assertThat(orderConfirmationPage.getContinueShoppingButton()).isVisible();
     }
 
     @Test
+    @DisplayName("Clicking Continue Shopping should navigate back to store")
     void shouldNavigateToHomePageWhenContinueShoppingClicked() {
         orderConfirmationPage.clickContinueShopping();
         assertThat(page).hasURL(Pattern.compile(".*/us/en.*"));

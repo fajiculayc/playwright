@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.codingchallenge.base.BaseTest;
@@ -19,12 +20,9 @@ import com.codingchallenge.pages.checkout.CheckoutPage;
 import com.codingchallenge.pages.checkout.OrderConfirmationPage;
 import com.codingchallenge.pages.products.ProductDetailsPage;
 import com.codingchallenge.pages.products.ProductsPage;
-import com.microsoft.playwright.Locator;
-import com.microsoft.playwright.options.WaitForSelectorState;
 
 public class SmokeTest extends BaseTest {
 
-    // Fields
     private String uniqueEmail;
     private String password;
     private String firstName;
@@ -41,6 +39,7 @@ public class SmokeTest extends BaseTest {
 
     @BeforeEach
     void setUpTestData() {
+        // Unique email prevents duplicate sign up errors on each run
         uniqueEmail = "smoketest_" + System.currentTimeMillis() + "@email.com";
         password = "Password123!";
         firstName = "Smoke";
@@ -57,109 +56,76 @@ public class SmokeTest extends BaseTest {
     }
 
     @Test
+    @DisplayName("Full purchase flow should complete successfully from sign up to order confirmation")
     void shouldCompleteFullPurchaseFlow() {
 
-        // ============================
-        // STEP 1: Navigate to store
-        // ============================
+        // Step 1: Navigate to store
         HomePage homePage = new HomePage(page);
         homePage.navigate();
 
         assertThat(page).hasURL("https://demo.spreecommerce.org/us/en");
-        assertThat(page).hasTitle("Spree Commerce Demo | Next.js Ecommerce Storefront"); // ✅ title
+        assertThat(page).hasTitle("Spree Commerce Demo | Next.js Ecommerce Storefront");
         assertThat(homePage.getAccountButton()).isVisible();
 
-        // ============================
-        // STEP 2: Sign up as new user
-        // ============================
+        // Step 2: Sign up as new user
         homePage.clickAccountButton();
         assertThat(page).hasURL("https://demo.spreecommerce.org/us/en/account");
-        assertThat(page).hasTitle("Spree Commerce Demo | Next.js Ecommerce Storefront | Spree"); // ✅ title
+        assertThat(page).hasTitle("Spree Commerce Demo | Next.js Ecommerce Storefront | Spree");
 
         SignInPage signInPage = new SignInPage(page);
         SignUpPage signUpPage = signInPage.clickSignUpLink();
 
         assertThat(page).hasURL("https://demo.spreecommerce.org/us/en/account/register");
-        assertThat(page).hasTitle("Spree Commerce Demo | Next.js Ecommerce Storefront | Spree"); // ✅ title
+        assertThat(page).hasTitle("Spree Commerce Demo | Next.js Ecommerce Storefront | Spree");
         assertThat(signUpPage.getCreateAccountHeader()).isVisible();
 
         signUpPage.signUp(firstName, lastName, uniqueEmail, password, password, true);
-
         assertThat(page).hasURL("https://demo.spreecommerce.org/us/en/account");
 
-        // ============================
-        // STEP 3: Verify logged in
-        // ============================
+        // Step 3: Verify logged in
         AccountPage accountPage = new AccountPage(page);
-        assertThat(page).hasTitle("Spree Commerce Demo | Next.js Ecommerce Storefront | Spree"); // ✅ title
+        assertThat(page).hasTitle("Spree Commerce Demo | Next.js Ecommerce Storefront | Spree");
         assertThat(accountPage.getAccountOverviewHeader()).isVisible();
         assertThat(accountPage.getUserEmail()).containsText(uniqueEmail);
 
-        // ============================
-        // STEP 4: Browse products
-        // ============================
+        // Step 4: Browse products and find in-stock product
         ProductsPage productsPage = new ProductsPage(page);
         productsPage.navigate();
 
         assertThat(page).hasURL("https://demo.spreecommerce.org/us/en/products");
-        assertThat(page).hasTitle("Products | Spree Commerce Demo | Next.js Ecommerce Storefront"); // ✅ title
+        assertThat(page).hasTitle("Products | Spree Commerce Demo | Next.js Ecommerce Storefront");
         assertThat(productsPage.getAllProductsHeader()).isVisible();
         assertTrue(productsPage.getExpectedProductCount() > 0);
 
-        // Scroll to load all products
-        productsPage.getProduct(0).waitFor(new Locator.WaitForOptions()
-                .setState(WaitForSelectorState.VISIBLE));
         productsPage.scrollUntilAllProductsLoaded();
+        ProductDetailsPage productDetailsPage = findInStockProduct(productsPage);
 
-        // Find in-stock product
-        ProductDetailsPage productDetailsPage = null;
-        int totalProducts = productsPage.getCurrentProductsCount();
-        for (int i = 0; i < totalProducts; i++) {
-            int randomIndex = (int) (Math.random() * totalProducts);
-            productsPage.getProduct(randomIndex).scrollIntoViewIfNeeded();
-            productDetailsPage = productsPage.clickProduct(randomIndex);
-
-            if (productDetailsPage.isProductInStock()) {
-                break;
-            }
-
-            page.goBack();
-            page.waitForLoadState();
-            productsPage = new ProductsPage(page);
-        }
-
-        // ============================
-        // STEP 4: Verify product details page
-        // ============================
+        // Step 5: Verify product details page
         assertThat(page).hasURL(Pattern.compile(".*/products/.*"));
         assertThat(productDetailsPage.getProductName()).isVisible();
         assertThat(productDetailsPage.getProductPrice()).isVisible();
         assertThat(productDetailsPage.getAddToCartButton()).isVisible();
         assertTrue(productDetailsPage.isProductInStock());
 
-        // Store product details for later verification
+        // Select a random color and verify it updates the label
+        String selectedColor = productDetailsPage.selectRandomColor();
+        assertThat(productDetailsPage.getSelectedColorLabel()).hasText(selectedColor);
+
         String productName = productDetailsPage.getProductName().innerText();
         int quantityBeforeAddingToCart = productDetailsPage.getQuantity();
 
-        // ============================
-        // STEP 5: Add product to cart
-        // ============================
+        // Step 6: Add product to cart and verify cart details
         CartComponent cart = productDetailsPage.clickAddToCartButton();
 
-        // ============================
-        // STEP 6: Verify cart details
-        // ============================
         assertThat(cart.getCartDialog()).isVisible();
         assertThat(cart.getCartTitle()).containsText(quantityBeforeAddingToCart + " item");
         assertThat(cart.getCartProductName()).isVisible();
         assertThat(cart.getCartProductName()).containsText(productName);
-        assertThat(cart.getCartProductColor()).isVisible();
+        assertThat(cart.getCartProductColor()).containsText(selectedColor);
         assertThat(cart.getCartProductPrice()).isVisible();
         assertEquals(quantityBeforeAddingToCart, cart.getCartQuantity());
 
-        // ============================
-        // STEP 7: Proceed to checkout
-        // ============================
+        // Step 7: Proceed to checkout
         CheckoutPage checkoutPage = cart.clickCheckout();
         checkoutPage.waitForLoad();
 
@@ -167,9 +133,8 @@ public class SmokeTest extends BaseTest {
         assertTrue(checkoutPage.isOnCheckoutPage());
         assertThat(checkoutPage.getShippingAddressHeader()).isVisible();
 
-        // Store checkout URL for later comparison
         String checkoutUrl = page.url();
-        String cartId = checkoutUrl.substring(checkoutUrl.lastIndexOf("/") + 1); // ✅ extract cart ID here
+        String cartId = checkoutUrl.substring(checkoutUrl.lastIndexOf("/") + 1);
 
         // Step 7a: Verify contact email
         assertEquals(uniqueEmail, checkoutPage.getContactEmailValue());
@@ -186,11 +151,10 @@ public class SmokeTest extends BaseTest {
         checkoutPage.selectState(state);
         checkoutPage.fillZipCode(zipCode);
 
-        // Step 7c: Select shipping method with refresh retry
+        // Step 7c: Select shipping method — retry with page reload if not visible
         checkoutPage.waitForShippingSection();
         if (!checkoutPage.getStandardShippingMethodRadioButton().isVisible() ||
-            !checkoutPage.getPremiumShippingMethodRadioButton().isVisible()) {
-            // Refresh and re-fill address if shipping methods not visible
+                !checkoutPage.getPremiumShippingMethodRadioButton().isVisible()) {
             page.reload();
             checkoutPage.waitForLoad();
             checkoutPage.selectCountry("US");
@@ -215,8 +179,7 @@ public class SmokeTest extends BaseTest {
         double subtotal = checkoutPage.getProductSubtotalValue();
         double shipping = checkoutPage.getProductShippingCostValue();
         double tax = checkoutPage.getProductTaxValue();
-        double expectedTotal = subtotal + shipping + tax;
-        assertEquals(expectedTotal, checkoutPage.getProductTotalValue(), 0.01);
+        assertEquals(subtotal + shipping + tax, checkoutPage.getProductTotalValue(), 0.01);
 
         // Step 7e: Fill payment method
         assertThat(checkoutPage.getPaymentMethodHeader()).isVisible();
@@ -230,20 +193,16 @@ public class SmokeTest extends BaseTest {
         assertThat(checkoutPage.getPayNowButton()).isVisible();
         OrderConfirmationPage orderConfirmationPage = checkoutPage.clickPayNow();
 
-        // ============================
-        // STEP 8: Verify order confirmation
-        // ============================
+        // Step 8: Verify order confirmation
         orderConfirmationPage.waitForLoad();
 
         assertTrue(
-            page.url().contains(cartId) &&
-            page.url().contains("/order-placed/") &&
-            checkoutUrl.contains("/checkout/"),
-            "Expected URL to contain cart ID '" + cartId + "' and '/order-placed/' " +
-            "but was: " + page.url()
-        );
+                page.url().contains(cartId) &&
+                page.url().contains("/order-placed/") &&
+                checkoutUrl.contains("/checkout/"),
+                "Expected URL to contain cart ID '" + cartId + "' and '/order-placed/' " +
+                "but was: " + page.url());
 
-        // Verify order confirmation content
         assertTrue(orderConfirmationPage.isOnOrderConfirmationPage());
         assertThat(orderConfirmationPage.getThankYouMessage(firstName)).isVisible();
         assertThat(orderConfirmationPage.getOrderNumber()).isVisible();
@@ -257,11 +216,10 @@ public class SmokeTest extends BaseTest {
         assertThat(orderConfirmationPage.getEmailConfirmation(uniqueEmail)).isVisible();
         assertThat(orderConfirmationPage.getContinueShoppingButton()).isVisible();
 
-        // Verify total on confirmation page
-        double confirmSubtotal = orderConfirmationPage.getSubtotalValue_();
-        double confirmShipping = orderConfirmationPage.getShippingValue_();
-        double confirmTax = orderConfirmationPage.getTaxValue_();
-        double confirmExpectedTotal = confirmSubtotal + confirmShipping + confirmTax;
-        assertEquals(confirmExpectedTotal, orderConfirmationPage.getTotalValue_(), 0.01);
+        assertEquals(
+                orderConfirmationPage.getSubtotalAmount() +
+                orderConfirmationPage.getShippingAmount() +
+                orderConfirmationPage.getTaxAmount(),
+                orderConfirmationPage.getTotalAmount(), 0.01);
     }
 }

@@ -9,7 +9,6 @@ import com.microsoft.playwright.options.WaitForSelectorState;
 
 public class CartComponent extends BasePage {
 
-    // Fields
     private final Locator cartDialog;
     private final Locator cartTitle;
     private final Locator cartProductName;
@@ -25,7 +24,6 @@ public class CartComponent extends BasePage {
     private final Locator closeCartButton;
     private final Locator cartLoadingIcon;
 
-    // Constructor
     public CartComponent(Page page) {
         super(page);
         this.cartDialog = page.locator("[role='dialog']");
@@ -34,20 +32,23 @@ public class CartComponent extends BasePage {
         this.cartProductColor = page.locator("p.mt-1.text-sm.text-gray-500");
         this.cartProductPrice = page.locator("div.text-sm.font-medium span.text-gray-900");
         this.cartQuantityDisplay = cartDialog.locator("span.tabular-nums");
-        this.cartIncreaseQuantityButton = cartDialog.getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName("Increase quantity"));
-        this.cartDecreaseQuantityButton = cartDialog.getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName("Decrease quantity"));
+        this.cartIncreaseQuantityButton = cartDialog.getByRole(AriaRole.BUTTON,
+                new Locator.GetByRoleOptions().setName("Increase quantity"));
+        this.cartDecreaseQuantityButton = cartDialog.getByRole(AriaRole.BUTTON,
+                new Locator.GetByRoleOptions().setName("Decrease quantity"));
         this.cartLoadingIcon = cartDialog.locator(".w-8");
         this.cartSubtotal = page.locator("div.space-y-2 div.flex.justify-between.items-center")
                 .first()
                 .locator("span")
                 .last();
         this.deleteItemButton = page.locator("[aria-label^='Remove']");
-        this.checkoutButton = page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName("Checkout"));
-        this.viewCartButton = page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName("View Cart"));
+        this.checkoutButton = page.getByRole(AriaRole.LINK,
+                new Page.GetByRoleOptions().setName("Checkout"));
+        this.viewCartButton = page.getByRole(AriaRole.LINK,
+                new Page.GetByRoleOptions().setName("View Cart"));
         this.closeCartButton = page.getByLabel("Close cart");
     }
 
-    // Getters
     public Locator getCartDialog() {
         return cartDialog;
     }
@@ -97,8 +98,7 @@ public class CartComponent extends BasePage {
     }
 
     public String getCartItemCount() {
-        String text = cartTitle.innerText();
-        return text.replaceAll("[^0-9]", "");
+        return cartTitle.innerText().replaceAll("[^0-9]", "");
     }
 
     public String getCartProductNameText() {
@@ -110,30 +110,35 @@ public class CartComponent extends BasePage {
     }
 
     public double getCartProductPriceValue() {
-        String priceText = cartProductPrice.innerText().trim();
-        return Double.parseDouble(priceText.replace("$", "").replace(",", ""));
+        return Double.parseDouble(
+                cartProductPrice.innerText().trim()
+                        .replace("$", "")
+                        .replace(",", ""));
     }
 
     public int getCartQuantity() {
-        return Integer.parseInt(cartDialog.locator("span.tabular-nums").innerText().trim());
+        return Integer.parseInt(
+                cartDialog.locator("span.tabular-nums").innerText().trim());
     }
 
     public double getCartSubtotalValue() {
-        String subtotalText = cartSubtotal.innerText().trim();
-        return Double.parseDouble(subtotalText.replace("$", "").replace(",", ""));
+        return Double.parseDouble(
+                cartSubtotal.innerText().trim()
+                        .replace("$", "")
+                        .replace(",", ""));
     }
 
-    // Actions
     public void increaseQuantity() {
         cartIncreaseQuantityButton.click();
-        cartLoadingIcon.waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.HIDDEN));
+        cartLoadingIcon.waitFor(new Locator.WaitForOptions()
+                .setState(WaitForSelectorState.HIDDEN));
     }
 
     public void decreaseQuantity() {
         cartDecreaseQuantityButton.click();
-        cartLoadingIcon.waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.HIDDEN));
+        cartLoadingIcon.waitFor(new Locator.WaitForOptions()
+                .setState(WaitForSelectorState.HIDDEN));
     }
-
 
     public void deleteItem() {
         deleteItemButton.click();
