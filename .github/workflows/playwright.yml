@@ -9,7 +9,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04 
 
     steps:
       - name: Checkout repository
@@ -31,11 +31,8 @@ jobs:
       - name: Install dependencies
         run: mvn install -DskipTests
 
-      - name: Install Playwright browsers
-        run: mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install chromium"
-
-      - name: Install Chromium OS dependencies
-        run: mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install-deps chromium"
+      - name: Install Playwright browsers with dependencies
+        run: mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install --with-deps chromium"
 
       - name: Run Smoke Tests
         run: mvn test -Dtest="SmokeTest" -DfailIfNoTests=false
